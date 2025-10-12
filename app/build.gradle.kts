@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.habittracker"
+    namespace = "com.example.usertracker"
     compileSdk = 36
 
     defaultConfig {
