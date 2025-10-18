@@ -17,14 +17,14 @@ import androidx.core.net.toUri
 // - DiffUtil - умное сравнение списков
 // - Автоматические анимации изменений
 // - Потокобезопасность
-class UserAdapter(private val onHabitChecked: (User, Boolean) -> Unit)
+class UserAdapter(private val onUserChecked: (User, Boolean) -> Unit)
     : ListAdapter<User, UserAdapter.UserViewHolder>(UserDiffCallback()) {
 
     // ViewHolder класс
     class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val ivIcon: ImageView = itemView.findViewById(R.id.ivHabitIcon)
-        val tvName: TextView = itemView.findViewById(R.id.tvHabitName)
-        val tvDescription: TextView = itemView.findViewById(R.id.tvHabitDescription)
+        val ivIcon: ImageView = itemView.findViewById(R.id.ivUserIcon)
+        val tvName: TextView = itemView.findViewById(R.id.tvUserName)
+        val tvDescription: TextView = itemView.findViewById(R.id.tvUserDescription)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserViewHolder {

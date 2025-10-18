@@ -9,14 +9,14 @@
     tools:context=".MainActivity">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/habitsRecyclerView"
+        android:id="@+id/usersRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="8dp"
         tools:listitem="@layout/activity_item_user" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAddHabit"
+        android:id="@+id/fabAddUser"
         android:layout_width="301dp"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|start"

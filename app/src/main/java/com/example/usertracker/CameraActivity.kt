@@ -132,7 +132,7 @@ class CameraActivity : AppCompatActivity() {
         val storageDir = getExternalFilesDir(null) // Сохраняем в папку приложения
 
         return File.createTempFile(
-            "HABIT_${timeStamp}_",
+            "USER_${timeStamp}_",
             ".jpg",
             storageDir
         )

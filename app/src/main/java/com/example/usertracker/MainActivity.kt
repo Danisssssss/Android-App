@@ -13,11 +13,21 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.activity.enableEdgeToEdge
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.view.Menu
 import android.view.MenuItem
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.example.usertracker.repository.UserRepository
+import com.example.usertracker.localDB.UserUiState
+import com.example.usertracker.localDB.UserViewModel
 import com.example.usertracker.utils.FileUtils
 import com.yourname.usertracker.network.SimpleNetworkMonitor
+import kotlinx.coroutines.launch
+import androidx.room.RoomDatabase
+import com.example.usertracker.localDB.AppDatabase
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +38,8 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
         setupClickListeners()
         setupNetworkMonitoring()
+        initRoomComponents()
+        observeUsers()
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -44,15 +56,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var userAdapter: UserAdapter
     private var userIdCounter = 0
 
-    // Временный список пользователей для демонстрации
-    private val sampleUsers = mutableListOf(
-        User(++userIdCounter, "Данис", "Техник 1-ой категории", 5, false),
-        User(++userIdCounter, "Шамиль", "Инжерен", 12, true),
-        User(++userIdCounter, "Донат", "Аналитик", 3, false),
-        User(++userIdCounter, "Давид", "Инженер", 7, true),
-    )
-
-    // Launcher для получения результата из AddHabitActivity
+    // Launcher для получения результата из AddUserActivity
     private val addUserLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -65,31 +69,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        usersRecyclerView = findViewById(R.id.habitsRecyclerView)
-        fabAddUser = findViewById(R.id.fabAddHabit)
+        usersRecyclerView = findViewById(R.id.usersRecyclerView)
+        fabAddUser = findViewById(R.id.fabAddUser)
     }
 
     private fun setupRecyclerView() {
         // Создаём адаптер и передаем ему функцию-обработчик
-        userAdapter = UserAdapter { habit, isChecked ->
+        userAdapter = UserAdapter { user, isChecked ->
             // lambda-функция будет вызвана адаптером
             // когда пользователь нажмет на чекбокс в списке
 
-            val updatedUser = habit.copy(
+            // Создаем обновленного пользователя
+            val updatedUser = user.copy(
                 isCompleted = isChecked,
-                streak = if (isChecked) habit.streak + 1 else habit.streak
+                streak = if (isChecked) user.streak + 1 else user.streak
             )
 
-            // Обновляем в нашем списке
-            updateUserInList(updatedUser)
-
-            // Обновляем в адаптере
-            userAdapter.updateUser(updatedUser)
+            userViewModel.updateUser(updatedUser)
 
             val message = if (isChecked) {
-                "${habit.name} выполнена! Серия: ${habit.streak + 1} дней"
+                "${user.name} выполнена! Серия: ${user.streak + 1} дней"
             } else {
-                "${habit.name} не выполнена"
+                "${user.name} не выполнена"
             }
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
@@ -100,9 +101,6 @@ class MainActivity : AppCompatActivity() {
             // Связываем адаптер с RecyclerView
             adapter = userAdapter
         }
-
-        // Устанавливаем начальный список
-        userAdapter.setUser(sampleUsers)
     }
 
     private fun setupClickListeners() {
@@ -114,8 +112,8 @@ class MainActivity : AppCompatActivity() {
 
     // Добавление нового пользователя
     private fun handleNewUserData(data: Intent) {
-        val name = data.getStringExtra("habit_name") ?: ""
-        val description = data.getStringExtra("habit_description") ?: ""
+        val name = data.getStringExtra("user_name") ?: ""
+        val description = data.getStringExtra("user_description") ?: ""
         val imageUriString = data.getStringExtra("image_uri")
         val contactName = data.getStringExtra("contact_name")
         val contactPhone = data.getStringExtra("contact_phone")
@@ -137,7 +135,6 @@ class MainActivity : AppCompatActivity() {
 
         // Создаем нового пользователя
         val newUser = User(
-            id = userIdCounter++,
             name = name,
             description = fullDescription,
             streak = 0,
@@ -147,11 +144,9 @@ class MainActivity : AppCompatActivity() {
             buddyPhone = contactPhone
         )
 
-        // Добавляем в наш список
-        sampleUsers.add(0, newUser)
-
-        // Добавляем в адаптер (безопасно)
-        userAdapter.addUser(newUser)
+        // Сохраняем в БД
+        //userViewModel.insertUser(newUser)
+        userViewModel.addUserWithSync(newUser)
 
         // Показываем информацию о выбранных данных
         var message = "Пользователь \"$name\" добавлен!"
@@ -162,14 +157,7 @@ class MainActivity : AppCompatActivity() {
             message += "\nИзображение добавлено"
         }
 
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-    }
-
-    private fun updateUserInList(updatedUser: User) {
-        val index = sampleUsers.indexOfFirst { it.id == updatedUser.id }
-        if (index != -1) {
-            sampleUsers[index] = updatedUser
-        }
+        // Toast показывается автоматически через observeUsers()
     }
     //endregion
 
@@ -207,14 +195,19 @@ class MainActivity : AppCompatActivity() {
                 restoreFromBackup()
                 true
             }
+            R.id.action_sync -> { // Новая кнопка синхронизации
+                syncWithServer()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
 
     private fun createBackup() {
-        val success = FileUtils.saveUsersToFile(this, sampleUsers)
+        val currentUsers = userAdapter.currentList
+        val success = FileUtils.saveUsersToFile(this, currentUsers)
         val message = if (success) {
-            "Бэкап создан! Сохранено ${sampleUsers.size} пользователей"
+            "Бэкап создан! Сохранено ${currentUsers.size} пользователей"
         } else {
             "Ошибка при создании бэкапа"
         }
@@ -229,15 +222,75 @@ class MainActivity : AppCompatActivity() {
 
         val restoredUsers = FileUtils.loadUsersFromFile(this)
         if (restoredUsers != null) {
-            sampleUsers.clear()
-            sampleUsers.addAll(restoredUsers)
-            userAdapter.setUser(sampleUsers)
+            // Удаляем все текущие привычки и добавляем восстановленные
+            lifecycleScope.launch {
+                userViewModel.users.collect { currentUsers ->
+                    currentUsers.forEach { userViewModel.deleteUser(it) }
+                }
+
+                restoredUsers.forEach { userViewModel.insertUser(it) }
+            }
 
             Toast.makeText(this, "Восстановлено ${restoredUsers.size} пользователей", Toast.LENGTH_LONG).show()
         } else {
             Toast.makeText(this, "Ошибка при восстановлении", Toast.LENGTH_SHORT).show()
         }
     }
+    //endregion
+
+    //region ЛР 6 локальная БД
+    // Room компоненты
+    private lateinit var userViewModel: UserViewModel
+
+    private fun initRoomComponents() {
+        val database = AppDatabase.getInstance(this)
+        val repository = UserRepository(database.userDao())
+        userViewModel = UserViewModel(repository)
+    }
+
+    private fun observeUsers() {
+        // Подписываемся на Flow из БД
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                userViewModel.users.collect { users ->
+                    userAdapter.setUser(users)
+
+                    // Обновляем счетчик ID
+                    if (users.isNotEmpty()) {
+                        userIdCounter = users.maxByOrNull { it.id }?.id?.plus(1) ?: 1
+                    }
+                }
+            }
+        }
+
+        // Наблюдаем за состоянием UI
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                userViewModel.uiState.collect { state ->
+                    when (state) {
+                        is UserUiState.Success -> {
+                            Toast.makeText(this@MainActivity, state.message, Toast.LENGTH_SHORT).show()
+                        }
+                        is UserUiState.Error -> {
+                            Toast.makeText(this@MainActivity, state.message, Toast.LENGTH_LONG).show()
+                        }
+                        UserUiState.Loading -> {
+                            // Можно показать ProgressBar
+                        }
+                    }
+                }
+            }
+        }
+    }
+    //endregion
+
+    //region ЛР 7 удаленная БД
+
+    // Метод синхронизации
+    private fun syncWithServer() {
+        userViewModel.syncWithServer()
+    }
+
     //endregion
 
 

@@ -8,7 +8,7 @@ import java.io.*
 
 class FileUtils {
     companion object {
-        private const val BACKUP_FILENAME = "habits_backup.json"
+        private const val BACKUP_FILENAME = "users_backup.json"
 
         // Сохраняем пользователя в JSON-файл
         fun saveUsersToFile(context: Context, users: List<User>): Boolean {

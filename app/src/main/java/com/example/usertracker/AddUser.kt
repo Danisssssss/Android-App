@@ -58,9 +58,9 @@ class AddUser : AppCompatActivity() {
     }
 
     private fun initViews() {
-        etUserName = findViewById(R.id.etHabitName)
-        etUserDescription = findViewById(R.id.etHabitDescription)
-        ivUserImage = findViewById(R.id.ivHabitImage)
+        etUserName = findViewById(R.id.etUserName)
+        etUserDescription = findViewById(R.id.etUserDescription)
+        ivUserImage = findViewById(R.id.ivUserImage)
         btnSelectImage = findViewById(R.id.btnSelectImage)
         tvSelectedContact = findViewById(R.id.tvSelectedContact)
         btnSelectContact = findViewById(R.id.btnSelectContact)
@@ -280,8 +280,8 @@ class AddUser : AppCompatActivity() {
 
         // Создаем результат для возврата в MainActivity
         val resultIntent = Intent().apply {
-            putExtra("habit_name", name)
-            putExtra("habit_description", description)
+            putExtra("user_name", name)
+            putExtra("user_description", description)
             selectedImageUri?.let { putExtra("image_uri", it.toString()) }
             selectedContactName?.let { putExtra("contact_name", it) }
             selectedContactPhone?.let { putExtra("contact_phone", it) }

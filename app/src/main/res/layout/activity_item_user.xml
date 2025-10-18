@@ -20,7 +20,7 @@
 
         <!-- Иконка пользователя -->
         <ImageView
-            android:id="@+id/ivHabitIcon"
+            android:id="@+id/ivUserIcon"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@android:drawable/ic_menu_my_calendar"
@@ -34,7 +34,7 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/tvHabitName"
+                android:id="@+id/tvUserName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Имя пользователя"
@@ -42,7 +42,7 @@
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tvHabitDescription"
+                android:id="@+id/tvUserDescription"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Профессия"
