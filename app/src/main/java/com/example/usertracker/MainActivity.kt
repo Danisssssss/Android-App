@@ -187,6 +187,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_map -> {
+                openMap()
+                true
+            }
             R.id.action_backup -> {
                 createBackup()
                 true
@@ -289,6 +293,15 @@ class MainActivity : AppCompatActivity() {
     // Метод синхронизации
     private fun syncWithServer() {
         userViewModel.syncWithServer()
+    }
+
+    //endregion
+
+    //region ЛР 8 карта
+
+    private fun openMap() {
+        val intent = Intent(this, MapActivity::class.java)
+        startActivity(intent)
     }
 
     //endregion
