@@ -8,8 +8,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import com.example.usertracker.repository.UserRepository
 import com.example.usertracker.model.User
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class UserViewModel(private val repository: UserRepository) : ViewModel() {
+    // одноразовое событие: (name, profession)
+    private val _userAdded = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)
+    val userAdded: SharedFlow<Pair<String, String>> = _userAdded.asSharedFlow()
 
     val users = repository.getAllUsers()
 
@@ -19,8 +25,18 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
     fun insertUser(user: User) {
         viewModelScope.launch {
             try {
-                repository.insertUser(user)
-                _uiState.value = UserUiState.Success("Привычка добавлена")
+                val id = repository.insertUser(user)
+                if (id > 0) {
+                    _uiState.value = UserUiState.Success("Пользователь добавлен")
+
+                    // В твоей модели НЕТ поля profession.
+                    // Ты кладёшь профессию в description, а ещё можешь дописывать туда "Напарник: ..."
+                    // Возьмём “чистую профессию” как часть ДО "Напарник: ".
+                    val profession = (user.description ?: "").substringBefore("\n\nНапарник:")
+                    _userAdded.tryEmit(user.name to profession)
+                } else {
+                    _uiState.value = UserUiState.Error("Не удалось добавить пользователя")
+                }
             } catch (e: Exception) {
                 _uiState.value = UserUiState.Error("Ошибка добавления: ${e.message}")
             }
@@ -65,16 +81,18 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
     fun addUserWithSync(user: User) {
         viewModelScope.launch {
             try {
-                // Сначала сохраняем локально
                 val localId = repository.insertUser(user)
-
-                // Пытаемся синхронизировать с сервером
                 val synced = repository.syncUserToServer(user)
 
-                if (synced) {
-                    _uiState.value = UserUiState.Success("Привычка добавлена и синхронизирована")
+                _uiState.value = if (synced) {
+                    UserUiState.Success("Пользователь добавлен и синхронизирован")
                 } else {
-                    _uiState.value = UserUiState.Success("Привычка добавлена локально (оффлайн)")
+                    UserUiState.Success("Пользователь добавлен локально (оффлайн)")
+                }
+
+                if (localId > 0) {
+                    val profession = (user.description ?: "").substringBefore("\n\nНапарник:")
+                    _userAdded.tryEmit(user.name to profession)
                 }
             } catch (e: Exception) {
                 _uiState.value = UserUiState.Error("Ошибка: ${e.message}")

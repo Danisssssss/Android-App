@@ -7,6 +7,22 @@ import com.example.usertracker.model.User
 
 class NotificationService(private val context: Context) {
 
+    fun showUserAdded(name: String, profession: String) {
+        val notification = NotificationCompat.Builder(context, MainActivity.NOTIFICATION_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_input_add) // замени на свой drawable, если есть
+            .setContentTitle("Добавлен пользователь")
+            .setContentText("$name — $profession")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("Пользователь: $name\nПрофессия: $profession")
+            )
+            .setAutoCancel(true)
+            .build()
+
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), notification)
+    }
+
     fun showRandomUserReminder(users: List<User>) {
         // Фильтруем невыполненные привычки
         val incompleteUsers = users.filter { !it.isCompleted }

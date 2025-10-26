@@ -276,13 +276,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeUsers() {
-        // Подписываемся на Flow из БД
+        // 1) подписка на список пользователей (как у тебя уже есть)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 userViewModel.users.collect { users ->
                     userAdapter.setUser(users)
-
-                    // Обновляем счетчик ID
                     if (users.isNotEmpty()) {
                         userIdCounter = users.maxByOrNull { it.id }?.id?.plus(1) ?: 1
                     }
@@ -290,21 +288,26 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Наблюдаем за состоянием UI
+        // 2) подписка на uiState (как у тебя уже есть)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 userViewModel.uiState.collect { state ->
                     when (state) {
-                        is UserUiState.Success -> {
+                        is UserUiState.Success ->
                             Toast.makeText(this@MainActivity, state.message, Toast.LENGTH_SHORT).show()
-                        }
-                        is UserUiState.Error -> {
+                        is UserUiState.Error ->
                             Toast.makeText(this@MainActivity, state.message, Toast.LENGTH_LONG).show()
-                        }
-                        UserUiState.Loading -> {
-                            // Можно показать ProgressBar
-                        }
+                        UserUiState.Loading -> { /* при желании прогресс */ }
                     }
+                }
+            }
+        }
+
+        // 3) НОВОЕ: ловим событие “пользователь добавлен” -> показываем уведомление
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                userViewModel.userAdded.collect { (name, profession) ->
+                    notificationService.showUserAdded(name, profession)
                 }
             }
         }
