@@ -20,6 +20,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "HabitTracker"
+rootProject.name = "Users"
 include(":app")
  
