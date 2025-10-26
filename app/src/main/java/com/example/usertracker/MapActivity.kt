@@ -66,7 +66,7 @@ class MapActivity : AppCompatActivity() {
 
     private fun setupMap() {
         mapView.map.move(
-            CameraPosition(Point(55.751574, 37.573856), 11.0f, 0.0f, 0.0f),
+            CameraPosition(Point(46.333677, 48.032860), 1.0f, 0.0f, 0.0f),
             Animation(Animation.Type.SMOOTH, 0f),
             null
         )
