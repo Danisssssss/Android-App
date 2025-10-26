@@ -15,6 +15,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat.enableEdgeToEdge
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -27,7 +28,7 @@ class MapActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Инициализация MapKit ДО setContentView
-        MapKitFactory.setApiKey("b9aa723f-f5ef-4f87-b4f8-75a96c51728e")
+        MapKitFactory.setApiKey("2d6be0fd-b59c-48ee-bbe6-47edeab7eac9")
         MapKitFactory.initialize(this)
 
         enableEdgeToEdge()
@@ -227,8 +228,8 @@ class MapActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        mapView.onStart()
         MapKitFactory.getInstance().onStart()
+        mapView.onStart()
     }
 
     override fun onStop() {

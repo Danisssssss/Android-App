@@ -24,7 +24,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HabitTracker">
 
-
         <activity
             android:name=".MapActivity"
             android:exported="false" />

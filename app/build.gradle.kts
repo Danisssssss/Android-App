@@ -93,5 +93,5 @@ dependencies {
     kapt("androidx.room:room-compiler:2.8.1")
 
     // Яндекс Карты
-    implementation("com.yandex.android:maps.mobile:4.22.0-lite")
+    implementation("com.yandex.android:maps.mobile:4.25.0-full")
 }
